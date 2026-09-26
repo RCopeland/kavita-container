@@ -93,6 +93,35 @@ If you'd rather serve media that already lives on the homelab disk, replace the
 `kavita_library:/library:rw` line with a bind mount
 (e.g. `- /srv/kavita/library:/library:rw`) — no other change is needed.
 
+### Required folder layout (important)
+
+Kavita requires **every series to live in its own folder** — files must never sit
+loose in the library root. See the
+[scanner docs](https://wiki.kavitareader.com/guides/scanner/).
+
+```
+/library/books/Lancer/Lancer-Core-Book.pdf     <- correct
+/library/books/Lancer-Core-Book.pdf            <- WRONG (no series folder)
+```
+
+Kavita takes the **series name from the folder**, then parses volume/chapter from
+the filename. So `Lancer/Lancer Vol 01 Core Book.pdf` and
+`Lancer/Lancer Vol 02 Compcon.pdf` group as one series with two volumes.
+
+To add books from another machine, stream them in over SSH and let a throwaway
+container write into the volume (the volume itself isn't writable by your user):
+
+```bash
+cat ~/Downloads/Lancer-Core-Book.pdf | ssh rob@192.168.4.37 \
+  'docker run --rm -i -v kavita-container_kavita_library:/library:rw alpine \
+     sh -c "mkdir -p /library/books/Lancer && \
+            cat > /library/books/Lancer/Lancer-Core-Book.pdf && \
+            chown -R 1000:1000 /library"'
+```
+
+The `mkdir -p` is required — without the series folder Kavita will not ingest the
+file.
+
 ## Security notes
 
 - The instance is intentionally **not** exposed to the LAN/internet; it's safe
