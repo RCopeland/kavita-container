@@ -1,0 +1,56 @@
+services:
+  # --- The Bodyguard (Tailscale) ---
+  # Joins the tailnet as "kavita" and serves the app at
+  # https://kavita.tail4fde5e.ts.net via `tailscale serve` (NOT funnel —
+  # no public exposure).
+  tailscale:
+    image: tailscale/tailscale:latest
+    container_name: kavita-tailscale
+    hostname: kavita
+    environment:
+      - TS_AUTHKEY=${TAILSCALE_AUTH_KEY}
+      - TS_STATE_DIR=/var/lib/tailscale
+      - TS_SERVE_CONFIG=/config/ts-serve.json
+      - TS_CERT_DOMAIN=${TS_CERT_DOMAIN}
+    volumes:
+      - tailscale_data:/var/lib/tailscale
+      - ./ts-serve.json:/config/ts-serve.json:ro
+    cap_add:
+      - NET_ADMIN
+      - NET_RAW
+    restart: unless-stopped
+
+  # --- The App (Kavita) ---
+  kavita:
+    # Official image (stable branch). Also built for arm64/armv7, so it runs on
+    # the homelab regardless of architecture.
+    image: jvmilazz0/kavita:latest
+    container_name: kavita
+    # Sharing the tailscale sidecar's netns: no published host ports, so the app
+    # is reachable ONLY over the tailnet (via `tailscale serve`), never exposed
+    # on the LAN or the public internet. No funnel.
+    network_mode: service:tailscale
+    restart: unless-stopped
+    environment:
+      - TZ=${TZ:-America/New_York}
+    volumes:
+      # Persistent config: database, covers, cache, logs, backups, jwt keys.
+      # The container path /kavita/config must NOT be changed.
+      - kavita_config:/kavita/config
+      # Auto-import library: shared drop-in volume for manga/comics/books.
+      # Kavita scans/watch-imports from here; mounted rw so it can clean up and
+      # rewrite covers/metadata. Other containers can mount this same volume
+      # (rw) to drop files in — see README.
+      - kavita_library:/library:rw
+    depends_on:
+      - tailscale
+
+volumes:
+  tailscale_data:
+  kavita_config:
+  # Shared library volume: created once (docker volume create ...) and seeded,
+  # then wired to the running stack. Declared external so `docker compose down -v`
+  # never deletes the media. Project-prefixed name as created on the homelab.
+  kavita_library:
+    external: true
+    name: kavita-container_kavita_library
