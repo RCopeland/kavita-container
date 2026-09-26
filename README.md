@@ -5,7 +5,7 @@ reading server for manga, comics, and ebooks — reachable **only over the
 tailnet** using the same tailscale-sidecar pattern as
 `~/Dev/storyteller-container`, `~/Dev/yamtrack-container`, `~/Dev/romm`, and
 `~/Dev/n8n`. No funnel, no published host ports — the web UI is available only at
-`https://kavita.tail4fde5e.ts.net` while you're on the tailnet.
+`https://kavita.<your-tailnet>.ts.net` while you're on the tailnet.
 
 ## What Kavita is
 
@@ -42,12 +42,12 @@ Verify over the tailnet:
 
 ```bash
 tailscale status | grep kavita
-curl -sI https://kavita.tail4fde5e.ts.net
+curl -sI https://kavita.<your-tailnet>.ts.net
 ```
 
 ## First-time setup
 
-1. Visit `https://kavita.tail4fde5e.ts.net` and create your admin account.
+1. Visit `https://kavita.<your-tailnet>.ts.net` and create your admin account.
 2. Add a **Library** and point it at `/library` (the shared volume), choosing
    the library type (Manga / Comic / Book) and any subfolder (e.g. `/library/manga`).
 3. Kavita will scan the folder, generate covers, and watch for new files.
